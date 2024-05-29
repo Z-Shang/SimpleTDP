@@ -13,7 +13,9 @@ Time to reinvent some wheels I guess, and the only GUI thing I could do is in C+
 
 ## Build
 ### Prerequisite
-You will need libpci, SDL2 and OpenGL3 to build this program. Please refer to your Linux distro's package manager for installing the required libraries.
+You will need libpci, SDL2 and OpenGL3 to build this program.
+
+Please refer to your Linux distro's package manager for installing the required libraries.
 
 ### Build
 ```bash
