@@ -1,0 +1,6 @@
+[submodule "RyzenAdj"]
+	path = RyzenAdj
+	url = https://github.com/FlyGoat/RyzenAdj
+[submodule "imgui"]
+	path = imgui
+	url = https://github.com/ocornut/imgui
