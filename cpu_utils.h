@@ -18,16 +18,32 @@
 
 #pragma once
 
+#include <filesystem>
+#include <vector>
+#include <tuple>
+#include <string>
 #include <cstdint>
 #include <cstddef>
+
 #include "ryzenadj.h"
 
 namespace cpu_utils {
 
+struct CPUState {
+
+  void init();
+  void setScalingGovernor(const std::string &);
+  void setEPP(const std::string &);
+
+  std::vector<std::tuple<std::filesystem::path, bool>> cpus;
+  std::string scaling_governor;
+  std::vector<std::string> scaling_available_governors;
+  std::string epp;
+  std::vector<std::string> epp_available_options;
+  
+};
 
 struct RyzenState {
-
-
   RyzenState();
 
   ~RyzenState();

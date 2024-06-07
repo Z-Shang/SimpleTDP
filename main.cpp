@@ -26,6 +26,8 @@
 #else
 #include <SDL_opengl.h>
 #endif
+
+#define NDEBUG 1
 #include "ryzenadj.h"
 #include "cpu_utils.h"
 
@@ -96,6 +98,9 @@ int main(){
     return 0;
   };
 
+  cpu_utils::CPUState cs;
+  cs.init();
+
   bool smtEnabled = true;
   bool boostEnabled = true;
 
@@ -143,6 +148,12 @@ int main(){
     apu_slow_rec.push_back(rs.apu_slow_value);
 
     ImGui::Begin("SimpleTDP", &done, flags);
+
+    // ImGui::Checkbox("Show Demo", &show_demo_window);
+    // if (show_demo_window) {
+    //   ImGui::ShowDemoWindow(&show_demo_window);
+    // }
+
 
     ImGui::SeparatorText("Overview");
 
@@ -292,7 +303,6 @@ int main(){
         ImGui::Text("%.2f", rs.cclk_busy_value);
         ImGui::EndTable();
       }
-
     }
 
     ImGui::Checkbox("Show Details", &showDetailOverview);
@@ -321,7 +331,35 @@ int main(){
     ImGui::Checkbox("Enable Boost", &boost);
 
     ImGui::SeparatorText("Power Options");
-    ImGui::Text("todo");
+    if (!cs.scaling_available_governors.empty()){
+      ImGui::Text("Scaling Governor");
+      if (ImGui::BeginTable("scaling_table", 1, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)){
+        for (const auto & option : cs.scaling_available_governors) {
+          ImGui::TableNextRow();
+          ImGui::TableSetColumnIndex(0);
+          if(ImGui::Selectable(option.c_str(), option == cs.scaling_governor)) {
+            cs.setScalingGovernor(option);
+            cs.init();
+          }
+        }
+        ImGui::EndTable();
+      }
+    }
+
+    if (!cs.epp_available_options.empty()) {
+      ImGui::Text("Energy Performance Preference (EPP)");
+      if (ImGui::BeginTable("epp_table", 1, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)){
+        for (const auto & option : cs.epp_available_options) {
+          ImGui::TableNextRow();
+          ImGui::TableSetColumnIndex(0);
+          if(ImGui::Selectable(option.c_str(), option == cs.epp)) {
+            cs.setEPP(option);
+            cs.init();
+          }
+        }
+        ImGui::EndTable();
+      }
+    }
 
     ImGui::SeparatorText("GPU Options");
     ImGui::Text("todo");

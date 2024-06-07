@@ -19,6 +19,10 @@
 #include "cpu_utils.h"
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
+
+#define CPU_PATH "/sys/devices/system/cpu"
 
 namespace cpu_utils {
 
@@ -46,6 +50,96 @@ static const char *family_name(ryzen_family fam)
   return "Unknown";
 }
 
+}
+
+void CPUState::init() {
+  // check online cpu
+  const std::filesystem::path cpu_path { CPU_PATH };
+  cpus = { {cpu_path / "cpu0" , true } };
+  for (size_t i = 1; i < 128; ++i) {
+    std::stringstream ss;
+    ss << "cpu" << i;
+    std::filesystem::path path = cpu_path / ss.str();
+    if (!std::filesystem::exists(path)) break;
+    std::filesystem::path online = path / "online";
+    if (!std::filesystem::exists(online)) break;
+    std::ifstream input (online);
+    int flag;
+    input >> flag;
+    cpus.emplace_back(path, flag == 1);
+    // std::cout << path << " online: " << flag << std::endl;
+  }
+
+  auto cpu0freq = std::get<0>(cpus[0]) / "cpufreq";
+  // get current scaling governor
+  if (auto scaling = cpu0freq / "scaling_governor"; std::filesystem::exists(scaling)) {
+    char governor[64];
+    std::ifstream input (scaling);
+    input.getline(governor, 64);
+    scaling_governor = governor;
+    std::cout << "scaling_governor: " << scaling_governor << std::endl;
+  }
+
+  // get scaling governors
+  if (auto scaling_governors = cpu0freq / "scaling_available_governors"; std::filesystem::exists(scaling_governors)) {
+    scaling_available_governors.clear();
+    std::ifstream input (scaling_governors);
+    while (input){
+      std::stringstream ss;
+      char c = input.get();
+      while (!isspace(c)) {
+        ss << c;
+        c = input.get();
+      }
+      scaling_available_governors.push_back(ss.str());
+      std::cout << "governor: " << scaling_available_governors.back() << std::endl;
+      while (isspace(input.peek())) input.get();
+      if (input.eof()) break;
+    }
+  }
+
+  // get current epp
+  if (auto epp_option = cpu0freq / "energy_performance_preference"; std::filesystem::exists(epp_option)) {
+    char option[64];
+    std::ifstream input (epp_option);
+    input.getline(option, 64);
+    epp = option;
+    std::cout << "epp: " << epp << std::endl;
+  }
+
+  // get epp options
+  if (auto epp_options = cpu0freq / "energy_performance_available_preferences"; std::filesystem::exists(epp_options)) {
+    epp_available_options.clear();
+    std::ifstream input (epp_options);
+    while (input){
+      std::stringstream ss;
+      char c = input.get();
+      while (!isspace(c)) {
+        ss << c;
+        c = input.get();
+      }
+      epp_available_options.push_back(ss.str());
+      std::cout << "epp option: " << epp_available_options.back() << std::endl;
+      while (isspace(input.peek())) input.get();
+      if (input.eof()) break;
+    }
+  }
+}
+
+void CPUState::setScalingGovernor(const std::string & option) {
+  for (auto [path, online] : cpus) {
+    if (!online) continue;
+    std::ofstream output (path / "cpufreq" / "scaling_governor", std::ios::out | std::ios::trunc);
+    output << option << std::endl;
+  }
+}
+
+void CPUState::setEPP(const std::string & option) {
+  for (auto [path, online] : cpus) {
+    if (!online) continue;
+    std::ofstream output (path / "cpufreq" / "energy_performance_preference", std::ios::out | std::ios::trunc);
+    output << option << std::endl;
+  }
 }
 
 RyzenState::RyzenState() {
